@@ -15,7 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const base = "rounded-2xl font-bold transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2";
+  const base = "rounded-2xl font-bold transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer disabled:cursor-default flex items-center justify-center gap-2";
 
   const sizes = {
     sm: "py-2 px-4 text-sm",
