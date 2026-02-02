@@ -1,10 +1,10 @@
-export interface TopicCardProps {
-    topic: Topic;
+export interface CategoryCardProps {
+    category: Category;
     isSelected: boolean;
     onToggle: (id: string) => void;
 }
 
-export interface Topic {
+export interface Category {
     id: string;
     label: string;
     image?: string;
