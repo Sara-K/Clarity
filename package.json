@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "1.38.0",
+    "@supabase/supabase-js": "^2.93.3",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "5.62.7",
     "react": "^19.2.3",
