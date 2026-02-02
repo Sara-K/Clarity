@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
 import { TopicCard } from '../components/features/TopicCard';
@@ -26,6 +27,7 @@ const TOPICS: Topic[] = [
 ];
 
 const OnboardingPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
 
@@ -56,7 +58,6 @@ const OnboardingPage: React.FC = () => {
             className="w-full h-14 bg-slate-50 border-none rounded-2xl pl-12 pr-4 text-slate-700 font-medium focus:ring-2 focus:ring-brand-pink outline-none transition-all shadow-sm"
           />
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           {filteredTopics.map(topic => (
             <TopicCard
@@ -77,6 +78,7 @@ const OnboardingPage: React.FC = () => {
             fullWidth
             className="relative flex h-16 w-full items-center justify-center rounded-2xl bg-white dark:bg-slate-900 transition-all duration-200 active:scale-95 shadow-xl border-none hover:bg-white dark:hover:bg-slate-900 hover:shadow-xl disabled:opacity-50 disabled:shadow-none disabled:ring-1 disabled:ring-slate-200"
             disabled={selectedTopics.length === 0}
+            onClick={() => navigate('/categories')}
           >
             <span className={`text-xl font-bold mr-2 ${selectedTopics.length === 0 ? 'text-slate-400' : 'gradient-text'}`}>
               Let's Go!
