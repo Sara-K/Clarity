@@ -4,30 +4,8 @@ import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
 import { CategoryCard } from '../components/features/CategoryCard';
 import { useCategoriesQuery } from '../hooks/useCategories';
+import { getCategoryImage } from '../config/categoryAssets';
 import type { DbCategory } from '../types/database';
-
-// Category images mapping (slug -> image)
-import techImg from '../assets/tech.png';
-import fashionImg from '../assets/fashion.png';
-import financeImg from '../assets/finance.png';
-import travelImg from '../assets/Travel.png';
-import designImg from '../assets/design.png';
-import programmingImg from '../assets/programming.png';
-import cybersecurityImg from '../assets/cybersecurity.png';
-import marketingImg from '../assets/marketing.png';
-
-const categoryImages: Record<string, string> = {
-  technology: techImg,
-  programming: programmingImg,
-  design: designImg,
-  fashion: fashionImg,
-  marketing: marketingImg,
-  'stocks-investing': financeImg,
-  'business-startups': techImg,
-  'personal-finance': financeImg,
-  'health-fitness': travelImg,
-  politics: cybersecurityImg,
-};
 
 const CategorySelectionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +24,7 @@ const CategorySelectionPage: React.FC = () => {
   const transformCategory = (cat: DbCategory) => ({
     id: cat.id,
     label: cat.name,
-    image: categoryImages[cat.slug],
+    image: getCategoryImage(cat.slug),
   });
 
   const filteredCategories = (categories || [])
