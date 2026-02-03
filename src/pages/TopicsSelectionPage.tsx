@@ -1,31 +1,19 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
 import { useTopicsByCategoriesQuery } from '../hooks/useTopics';
 import { useCategoriesQuery } from '../hooks/useCategories';
+import { useOnboardingStore } from '../store/useOnboardingStore';
 import type { DbTopic, DbCategory } from '../types/database';
 
 const TopicsSelectionPage: React.FC = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
-
-    const categoryIds: string[] = (location.state as { categoryIds?: string[] })?.categoryIds || [];
-
-    const { data: topics, isLoading: topicsLoading, isError: topicsError, refetch } = useTopicsByCategoriesQuery(categoryIds);
-
+    const { selectedCategoryIds, selectedTopicIds: selectedTopics, toggleTopic } = useOnboardingStore();
+    const { data: topics, isLoading: topicsLoading, isError: topicsError, refetch } = useTopicsByCategoriesQuery(selectedCategoryIds);
     const { data: allCategories } = useCategoriesQuery();
 
-    const toggleTopic = (id: string) => {
-        setSelectedTopics(prev =>
-            prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
-        );
-    };
-
     const handleNext = () => {
-        // TODO: save the selected topics here
-        console.log('Selected topics:', selectedTopics);
         navigate('/feed');
     };
 

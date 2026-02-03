@@ -7,18 +7,16 @@ import { useCategoriesQuery } from '../hooks/useCategories';
 import { getCategoryImage } from '../config/categoryAssets';
 import type { DbCategory } from '../types/database';
 
+import { useOnboardingStore } from '../store/useOnboardingStore';
+
 const CategorySelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const { selectedCategoryIds: selectedCategories, toggleCategory } = useOnboardingStore();
 
   const { data: categories, isLoading, isError, refetch } = useCategoriesQuery();
 
-  const toggleCategory = (id: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    );
-  };
+
 
   // Transform DB category to UI format
   const transformCategory = (cat: DbCategory) => ({
@@ -102,7 +100,7 @@ const CategorySelectionPage: React.FC = () => {
             fullWidth
             className="relative flex h-16 w-full items-center justify-center rounded-2xl bg-white dark:bg-slate-900 transition-all duration-200 active:scale-95 shadow-xl border-none hover:bg-white dark:hover:bg-slate-900 hover:shadow-xl disabled:opacity-50 disabled:shadow-none disabled:ring-1 disabled:ring-slate-200"
             disabled={selectedCategories.length === 0}
-            onClick={() => navigate('/topics', { state: { categoryIds: selectedCategories } })}
+            onClick={() => navigate('/topics')}
           >
             <span className={`text-xl font-bold mr-2 ${selectedCategories.length === 0 ? 'text-slate-400' : 'gradient-text'}`}>
               Let's Go!
