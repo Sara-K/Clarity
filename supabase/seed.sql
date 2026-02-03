@@ -1,18 +1,19 @@
 -- Seed Categories
-INSERT INTO categories (id, name, slug, sort_order) VALUES
-('cat_technology', 'Technology', 'technology', 1),
-('cat_programming', 'Programming', 'programming', 2),
-('cat_design', 'Design', 'design', 3),
-('cat_politics', 'Politics', 'politics', 4),
-('cat_fashion', 'Fashion', 'fashion', 5),
-('cat_marketing', 'Marketing', 'marketing', 6),
-('cat_stocks_investing', 'Stocks & Investing', 'stocks-investing', 7),
-('cat_business_startups', 'Business & Startups', 'business-startups', 8),
-('cat_personal_finance', 'Personal Finance', 'personal-finance', 9),
-('cat_health_fitness', 'Health & Fitness', 'health-fitness', 10)
+INSERT INTO categories (id, name, slug, tag_color, sort_order) VALUES
+('cat_technology', 'Technology', 'technology', 'bg-blue-100 text-blue-600', 1),
+('cat_programming', 'Programming', 'programming', 'bg-indigo-100 text-indigo-600', 2),
+('cat_travel', 'Travel', 'travel', 'bg-pink-100 text-pink-600', 3),
+('cat_politics', 'Politics', 'politics', 'bg-red-100 text-red-600', 4),
+('cat_fashion', 'Fashion', 'fashion', 'bg-purple-100 text-purple-600', 5),
+('cat_marketing', 'Marketing', 'marketing', 'bg-orange-100 text-orange-600', 6),
+('cat_stocks_investing', 'Stocks & Investing', 'stocks-investing', 'bg-green-100 text-green-600', 7),
+('cat_business_startups', 'Business & Startups', 'business-startups', 'bg-yellow-100 text-yellow-600', 8),
+('cat_personal_finance', 'Personal Finance', 'personal-finance', 'bg-emerald-100 text-emerald-600', 9),
+('cat_health_fitness', 'Health & Fitness', 'health-fitness', 'bg-teal-100 text-teal-600', 10)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   slug = EXCLUDED.slug,
+  tag_color = EXCLUDED.tag_color,
   sort_order = EXCLUDED.sort_order;
 
 -- Seed Topics
@@ -29,11 +30,11 @@ INSERT INTO topics (id, category_id, name, slug, sort_order) VALUES
 ('top_programming_react', 'cat_programming', 'React', 'react', 4),
 ('top_programming_data', 'cat_programming', 'Data Science', 'data-science', 5),
 
-('top_design_uiux', 'cat_design', 'UI/UX', 'ui-ux', 1),
-('top_design_product', 'cat_design', 'Product Design', 'product-design', 2),
-('top_design_design_systems', 'cat_design', 'Design Systems', 'design-systems', 3),
-('top_design_graphic', 'cat_design', 'Graphic Design', 'graphic-design', 4),
-('top_design_typography', 'cat_design', 'Typography', 'typography', 5),
+('top_travel_destinations', 'cat_travel', 'Destinations', 'travel-destinations', 1),
+('top_travel_budget', 'cat_travel', 'Budget Travel', 'budget-travel', 2),
+('top_travel_solo', 'cat_travel', 'Solo Travel', 'solo-travel', 3),
+('top_travel_adventure', 'cat_travel', 'Adventure', 'adventure-travel', 4),
+('top_travel_guides', 'cat_travel', 'Travel Guides', 'travel-guides', 5),
 
 ('top_politics_elections', 'cat_politics', 'Elections', 'elections', 1),
 ('top_politics_policy', 'cat_politics', 'Public Policy', 'public-policy', 2),
