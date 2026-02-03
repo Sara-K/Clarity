@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import CategorySelectionPage from './pages/CategorySelectionPage';
 import TopicsSelectionPage from './pages/TopicsSelectionPage';
+import FeedPage from './pages/FeedPage';
 
 const App: React.FC = () => {
 
@@ -11,6 +12,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<CategorySelectionPage />} />
           <Route path="/topics" element={<TopicsSelectionPage />} />
+          <Route path="/feed" element={<FeedPage />} />
         </Routes>
       </div>
     </HashRouter>
