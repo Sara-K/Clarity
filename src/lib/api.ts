@@ -27,7 +27,7 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
 // GET categories ordered by sort_order, then name
 export async function fetchCategories(): Promise<DbCategory[]> {
     return fetchApi<DbCategory[]>(
-        '/categories?select=id,name,slug,sort_order&order=sort_order.asc,name.asc'
+        '/categories?select=id,name,slug,tag_color,sort_order&order=sort_order.asc,name.asc'
     );
 }
 
