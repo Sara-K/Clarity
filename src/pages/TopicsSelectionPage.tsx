@@ -1,28 +1,20 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
-
-interface Topic {
-    id: string;
-    label: string;
-    icon: string;
-}
-
-const TOPICS: Topic[] = [
-    { id: 'ai', label: 'Artificial Intelligence', icon: 'psychology' },
-    { id: 'mobile', label: 'Mobile Development', icon: 'smartphone' },
-    { id: 'web', label: 'Web Development', icon: 'language' },
-    { id: 'design', label: 'UI/UX Design', icon: 'palette' },
-    { id: 'backend', label: 'Backend Systems', icon: 'dns' },
-    { id: 'devops', label: 'Cloud & DevOps', icon: 'cloud_done' },
-    { id: 'data', label: 'Data Science', icon: 'analytics' },
-    { id: 'security', label: 'Cybersecurity', icon: 'security' },
-];
+import { useTopicsByCategoriesQuery } from '../hooks/useTopics';
+import { useCategoriesQuery } from '../hooks/useCategories';
+import type { DbTopic, DbCategory } from '../types/database';
 
 const TopicsSelectionPage: React.FC = () => {
-    const navigate = useNavigate();
+    const location = useLocation();
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+
+    const categoryIds: string[] = (location.state as { categoryIds?: string[] })?.categoryIds || [];
+
+    const { data: topics, isLoading: topicsLoading, isError: topicsError, refetch } = useTopicsByCategoriesQuery(categoryIds);
+
+    const { data: allCategories } = useCategoriesQuery();
 
     const toggleTopic = (id: string) => {
         setSelectedTopics(prev =>
@@ -38,6 +30,47 @@ const TopicsSelectionPage: React.FC = () => {
         console.log('Skip clicked');
     };
 
+    const groupedTopics = (topics || []).reduce<Record<string, DbTopic[]>>((acc, topic) => {
+        if (!acc[topic.category_id]) acc[topic.category_id] = [];
+        acc[topic.category_id].push(topic);
+        return acc;
+    }, {});
+
+    const getCategoryName = (categoryId: string): string => {
+        const cat = allCategories?.find((c: DbCategory) => c.id === categoryId);
+        return cat?.name || 'Unknown';
+    };
+
+    if (topicsLoading) {
+        return (
+            <div className="flex flex-col h-screen bg-white font-display overflow-hidden relative">
+                <div className="p-8 space-y-2 pt-12 shrink-0">
+                    <div className="h-10 w-3/4 bg-slate-200 rounded-lg animate-pulse" />
+                    <div className="h-6 w-1/2 bg-slate-100 rounded-lg animate-pulse" />
+                </div>
+                <div className="px-6 py-4 flex-1">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="h-16 w-full bg-slate-100 rounded-2xl mb-4 animate-pulse" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (topicsError) {
+        return (
+            <div className="flex flex-col h-screen bg-white font-display items-center justify-center p-8">
+                <Icon name="error" className="text-red-400 text-6xl mb-4" />
+                <h2 className="text-xl font-bold text-slate-700 mb-2">Failed to load topics</h2>
+                <p className="text-slate-500 mb-6">Please check your connection and try again.</p>
+                <Button onClick={() => refetch()} className="px-6 py-3 bg-brand-pink text-white rounded-xl">
+                    <Icon name="refresh" className="mr-2" />
+                    Retry
+                </Button>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-screen bg-white font-display overflow-hidden relative">
             <div className="p-8 space-y-2 pt-12 shrink-0">
@@ -46,30 +79,38 @@ const TopicsSelectionPage: React.FC = () => {
             </div>
 
             <div className="px-6 py-4 flex-1 overflow-y-auto hide-scrollbar pb-40">
-                <div className="grid grid-cols-1 gap-4 mt-4">
-                    {TOPICS.map((topic) => (
-                        <button
-                            key={topic.id}
-                            onClick={() => toggleTopic(topic.id)}
-                            className={`flex items-center p-4 rounded-2xl border-2 transition-all duration-200 ${selectedTopics.includes(topic.id)
-                                ? 'border-brand-pink bg-brand-pink/5 shadow-md'
-                                : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
-                                }`}
-                        >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 ${selectedTopics.includes(topic.id) ? 'bg-brand-pink text-white' : 'bg-white text-slate-400'
-                                }`}>
-                                <Icon name={topic.icon} />
-                            </div>
-                            <span className={`text-lg font-semibold ${selectedTopics.includes(topic.id) ? 'text-slate-900' : 'text-slate-600'
-                                }`}>
-                                {topic.label}
-                            </span>
-                            {selectedTopics.includes(topic.id) && (
-                                <Icon name="check_circle" className="ml-auto text-brand-pink" />
-                            )}
-                        </button>
-                    ))}
-                </div>
+                {Object.entries(groupedTopics).map(([categoryId, catTopics]) => (
+                    <div key={categoryId} className="mb-6">
+                        <h2 className="text-lg font-bold text-slate-700 mb-3 flex items-center">
+                            <span className="w-2 h-2 rounded-full bg-brand-pink mr-2" />
+                            {getCategoryName(categoryId)}
+                        </h2>
+                        <div className="grid grid-cols-1 gap-3">
+                            {catTopics.map((topic) => (
+                                <button
+                                    key={topic.id}
+                                    onClick={() => toggleTopic(topic.id)}
+                                    className={`flex items-center p-4 rounded-2xl border-2 transition-all duration-200 ${selectedTopics.includes(topic.id)
+                                        ? 'border-brand-pink bg-brand-pink/5 shadow-md'
+                                        : 'border-slate-100 bg-slate-50 hover:bg-slate-100'
+                                        }`}
+                                >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 ${selectedTopics.includes(topic.id) ? 'bg-brand-pink text-white' : 'bg-white text-slate-400'
+                                        }`}>
+                                        <Icon name="tag" />
+                                    </div>
+                                    <span className={`text-base font-semibold ${selectedTopics.includes(topic.id) ? 'text-slate-900' : 'text-slate-600'
+                                        }`}>
+                                        {topic.name}
+                                    </span>
+                                    {selectedTopics.includes(topic.id) && (
+                                        <Icon name="check_circle" className="ml-auto text-brand-pink" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pt-12 z-50 flex flex-col gap-4">

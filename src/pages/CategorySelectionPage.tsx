@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
 import { CategoryCard } from '../components/features/CategoryCard';
-import { Category } from '../components/features/CategoryCard/CategoryCard.types';
+import { useCategoriesQuery } from '../hooks/useCategories';
+import type { DbCategory } from '../types/database';
 
-// Category Images
+// Category images mapping (slug -> image)
 import techImg from '../assets/tech.png';
 import fashionImg from '../assets/fashion.png';
 import financeImg from '../assets/finance.png';
@@ -15,21 +16,25 @@ import programmingImg from '../assets/programming.png';
 import cybersecurityImg from '../assets/cybersecurity.png';
 import marketingImg from '../assets/marketing.png';
 
-const CATEGORIES: Category[] = [
-  { id: 'tech', label: 'Tech', image: techImg },
-  { id: 'fashion', label: 'Fashion', image: fashionImg },
-  { id: 'marketing', label: 'Marketing', image: marketingImg },
-  { id: 'finance', label: 'Finance', image: financeImg },
-  { id: 'design', label: 'Design', image: designImg },
-  { id: 'programming', label: 'Programming', image: programmingImg },
-  { id: 'cybersecurity', label: 'Cybersecurity', image: cybersecurityImg },
-  { id: 'travel', label: 'Travel', image: travelImg },
-];
+const categoryImages: Record<string, string> = {
+  technology: techImg,
+  programming: programmingImg,
+  design: designImg,
+  fashion: fashionImg,
+  marketing: marketingImg,
+  'stocks-investing': financeImg,
+  'business-startups': techImg,
+  'personal-finance': financeImg,
+  'health-fitness': travelImg,
+  politics: cybersecurityImg,
+};
 
 const CategorySelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const { data: categories, isLoading, isError, refetch } = useCategoriesQuery();
 
   const toggleCategory = (id: string) => {
     setSelectedCategories(prev =>
@@ -37,9 +42,50 @@ const CategorySelectionPage: React.FC = () => {
     );
   };
 
-  const filteredCategories = CATEGORIES.filter(c =>
-    c.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Transform DB category to UI format
+  const transformCategory = (cat: DbCategory) => ({
+    id: cat.id,
+    label: cat.name,
+    image: categoryImages[cat.slug],
+  });
+
+  const filteredCategories = (categories || [])
+    .map(transformCategory)
+    .filter(c => c.label.toLowerCase().includes(searchQuery.toLowerCase()));
+
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-screen bg-white font-display overflow-hidden relative">
+        <div className="p-8 space-y-2 pt-12 shrink-0">
+          <div className="h-10 w-3/4 bg-slate-200 rounded-lg animate-pulse" />
+          <div className="h-6 w-1/2 bg-slate-100 rounded-lg animate-pulse" />
+        </div>
+        <div className="px-6 py-4 flex-1">
+          <div className="h-14 w-full bg-slate-100 rounded-2xl mb-8 animate-pulse" />
+          <div className="grid grid-cols-2 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-square bg-slate-100 rounded-[2rem] animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-screen bg-white font-display items-center justify-center p-8">
+        <Icon name="error" className="text-red-400 text-6xl mb-4" />
+        <h2 className="text-xl font-bold text-slate-700 mb-2">Failed to load categories</h2>
+        <p className="text-slate-500 mb-6">Please check your connection and try again.</p>
+        <Button onClick={() => refetch()} className="px-6 py-3 bg-brand-pink text-white rounded-xl">
+          <Icon name="refresh" className="mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-white font-display overflow-hidden relative">
@@ -78,7 +124,7 @@ const CategorySelectionPage: React.FC = () => {
             fullWidth
             className="relative flex h-16 w-full items-center justify-center rounded-2xl bg-white dark:bg-slate-900 transition-all duration-200 active:scale-95 shadow-xl border-none hover:bg-white dark:hover:bg-slate-900 hover:shadow-xl disabled:opacity-50 disabled:shadow-none disabled:ring-1 disabled:ring-slate-200"
             disabled={selectedCategories.length === 0}
-            onClick={() => navigate('/topics')}
+            onClick={() => navigate('/topics', { state: { categoryIds: selectedCategories } })}
           >
             <span className={`text-xl font-bold mr-2 ${selectedCategories.length === 0 ? 'text-slate-400' : 'gradient-text'}`}>
               Let's Go!
