@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icons';
 import { useTopicsByCategoriesQuery } from '../hooks/useTopics';
@@ -7,6 +7,7 @@ import { useCategoriesQuery } from '../hooks/useCategories';
 import type { DbTopic, DbCategory } from '../types/database';
 
 const TopicsSelectionPage: React.FC = () => {
+    const navigate = useNavigate();
     const location = useLocation();
     const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
 
@@ -23,11 +24,13 @@ const TopicsSelectionPage: React.FC = () => {
     };
 
     const handleNext = () => {
+        // TODO: save the selected topics here
         console.log('Selected topics:', selectedTopics);
+        navigate('/feed');
     };
 
     const handleSkip = () => {
-        console.log('Skip clicked');
+        navigate('/feed');
     };
 
     const groupedTopics = (topics || []).reduce<Record<string, DbTopic[]>>((acc, topic) => {
