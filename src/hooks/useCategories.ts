@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchCategories } from '../lib/api';
+import { fetchCategories } from '../lib/api/supabase';
 import type { DbCategory } from '../types/database';
 
 export function useCategoriesQuery() {

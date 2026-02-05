@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { fetchTopicsByCategoryIds } from '../lib/api';
+import { fetchTopicsByCategoryIds } from '../lib/api/supabase';
 
 interface OnboardingState {
     selectedCategoryIds: string[];

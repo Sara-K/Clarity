@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchTopicsByCategoryIds } from '../lib/api';
+import { fetchTopicsByCategoryIds } from '../lib/api/supabase';
 import type { DbTopic } from '../types/database';
 
 export function useTopicsByCategoriesQuery(categoryIds: string[]) {
