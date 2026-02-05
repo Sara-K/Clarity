@@ -1,27 +1,45 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fetchTopicsByCategoryIds } from '../lib/api';
 
 interface OnboardingState {
     selectedCategoryIds: string[];
     selectedTopicIds: string[];
-    toggleCategory: (id: string) => void;
+    toggleCategory: (id: string) => Promise<void>;
     toggleTopic: (id: string) => void;
     reset: () => void;
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             selectedCategoryIds: [],
             selectedTopicIds: [],
 
-            toggleCategory: (id) => set((state) => {
-                const isSelected = state.selectedCategoryIds.includes(id);
-                const newIds = isSelected
-                    ? state.selectedCategoryIds.filter((c) => c !== id)
-                    : [...state.selectedCategoryIds, id];
-                return { selectedCategoryIds: newIds };
-            }),
+            toggleCategory: async (id) => {
+                const isSelected = get().selectedCategoryIds.includes(id);
+
+                if (isSelected) {
+                    set((state) => ({
+                        selectedCategoryIds: state.selectedCategoryIds.filter((c) => c !== id),
+                    }));
+                    try {
+                        const topics = await fetchTopicsByCategoryIds([id]);
+                        const topicIdsToRemove = topics.map((t) => t.id);
+                        set((state) => ({
+                            selectedTopicIds: state.selectedTopicIds.filter(
+                                (tid) => !topicIdsToRemove.includes(tid)
+                            ),
+                        }));
+                    } catch (error) {
+                        console.error('Failed to sync topics on category deselection:', error);
+                    }
+                } else {
+                    set((state) => ({
+                        selectedCategoryIds: [...get().selectedCategoryIds, id],
+                    }));
+                }
+            },
 
             toggleTopic: (id) => set((state) => {
                 const isSelected = state.selectedTopicIds.includes(id);
