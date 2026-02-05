@@ -28,6 +28,21 @@ export async function fetchCategories(): Promise<DbCategory[]> {
 }
 
 /**
+ * Fetch specific categories by their IDs.
+ */
+export async function fetchCategoriesByIds(ids: string[]): Promise<DbCategory[]> {
+    if (ids.length === 0) return [];
+
+    const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug, tag_color, sort_order')
+        .in('id', ids);
+
+    if (error) throw error;
+    return data || [];
+}
+
+/**
  * Fetch topics for a list of category IDs.
  */
 export async function fetchTopicsByCategoryIds(
@@ -45,3 +60,19 @@ export async function fetchTopicsByCategoryIds(
     if (error) throw error;
     return data || [];
 }
+
+/**
+ * Fetch specific topics by their IDs.
+ */
+export async function fetchTopicsByIds(ids: string[]): Promise<DbTopic[]> {
+    if (ids.length === 0) return [];
+
+    const { data, error } = await supabase
+        .from('topics')
+        .select('id, category_id, name, slug, sort_order')
+        .in('id', ids);
+
+    if (error) throw error;
+    return data || [];
+}
+
