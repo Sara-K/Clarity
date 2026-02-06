@@ -5,17 +5,17 @@ import { FeedCardProps } from './FeedCard.types';
 export const FeedCard: React.FC<FeedCardProps> = ({
     tag,
     tagColor = 'bg-brand-pink/20 text-brand-pink',
-    timeAgo,
-    title,
-    summary,
+    article,
 }) => {
+    const { title, url, source, publishedAt, imageUrl } = article;
+
     return (
         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
             <div className="flex justify-between items-start mb-4">
                 <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${tagColor}`}>
                     {tag}
                 </span>
-                <span className="text-slate-400 text-xs font-medium">{timeAgo}</span>
+                <span className="text-slate-400 text-xs font-medium">{publishedAt}</span>
             </div>
             <h2 className="text-2xl font-display font-bold text-slate-900 leading-tight mb-6">
                 {title}
@@ -26,7 +26,7 @@ export const FeedCard: React.FC<FeedCardProps> = ({
                     <span className="text-xs font-bold text-slate-500 tracking-wider uppercase">TLDR</span>
                 </div>
                 <p className="text-slate-600 leading-relaxed font-medium">
-                    {summary}
+                    Summary coming soon... {source}
                 </p>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-50">

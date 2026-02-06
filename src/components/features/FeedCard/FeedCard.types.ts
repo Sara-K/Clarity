@@ -1,9 +1,7 @@
+import type { ArticleLink } from '../../../types/news';
+
 export interface FeedCardProps {
-    id: string;
+    article: ArticleLink;
     tag: string;
     tagColor?: string;
-    timeAgo: string;
-    title: string;
-    summary: string;
-    likes?: number;
 }
