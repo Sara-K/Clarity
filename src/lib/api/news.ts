@@ -1,11 +1,10 @@
 // News API Layer
 // Abstracts news provider to make it easy to swap providers later
 
-import { fetchGdeltNews } from '../newsProviders/gdelt';
 import { NEWS_CONFIG } from '../../config/newsConfig';
-import type { NewsQueryParams, NewsResponse, ArticleLink } from '../../types/news';
+import type { NewsQueryParams, NewsResponse } from '../../types/news';
 
-import { fetchCategoriesByIds, fetchTopicsByIds } from './supabase';
+import { supabase, fetchCategoriesByIds, fetchTopicsByIds } from './supabase';
 
 /**
  * Resolve category and topic IDs to their respective slugs.
@@ -24,7 +23,7 @@ async function resolveSlugs(categoryIds: string[], topicIds: string[]) {
 
 /**
  * Fetch latest news articles based on selected categories and topics.
- * Uses category and topic slugs for GDELT search.
+ * Calls a Supabase Edge Function that handles GDELT integration and caching.
  */
 export async function fetchLatestNews(
     params: NewsQueryParams
@@ -38,7 +37,7 @@ export async function fetchLatestNews(
 
     if (!categoryIds.length && !topicIds.length) {
         return {
-            provider: 'gdelt',
+            provider: 'gdelt-proxied',
             query: { keywords: [], timeRange: '' },
             items: [],
             fetchedAt: new Date().toISOString(),
@@ -46,23 +45,29 @@ export async function fetchLatestNews(
     }
 
     const { categorySlugs, topicSlugs } = await resolveSlugs(categoryIds, topicIds);
-    const keywords = [...new Set([...categorySlugs, ...topicSlugs])];
 
-    const articles = await fetchGdeltNews({
-        categorySlugs,
-        topicSlugs,
-        topicIds,
-        limit,
-        sinceHours,
+    const { data: articles, error } = await supabase.functions.invoke('fetch-news', {
+        body: {
+            categorySlugs,
+            topicSlugs,
+            topicIds,
+            limit,
+            sinceHours
+        }
     });
 
+    if (error) {
+        console.error('Edge Function error:', error);
+        throw new Error('Failed to fetch news via edge function');
+    }
+
     return {
-        provider: 'gdelt',
+        provider: 'gdelt-proxied',
         query: {
-            keywords,
+            keywords: [...new Set([...categorySlugs, ...topicSlugs])],
             timeRange: `${sinceHours}h`,
         },
-        items: articles,
+        items: articles || [],
         fetchedAt: new Date().toISOString(),
     };
 }
