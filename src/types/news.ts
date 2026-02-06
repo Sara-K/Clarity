@@ -24,18 +24,3 @@ export interface NewsResponse {
     items: ArticleLink[];
     fetchedAt: string;
 }
-
-export interface GDELTArticle {
-    url: string;
-    url_mobile?: string;
-    title: string;
-    seendate: string;
-    socialimage?: string;
-    domain: string;
-    language?: string;
-    sourcecountry?: string;
-}
-
-export interface GDELTResponse {
-    articles?: GDELTArticle[];
-}
