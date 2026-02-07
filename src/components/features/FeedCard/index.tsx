@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../ui/Icons';
 import { FeedCardProps } from './FeedCard.types';
 
@@ -7,7 +8,8 @@ export const FeedCard: React.FC<FeedCardProps> = ({
     tagColor = 'bg-brand-pink/20 text-brand-pink',
     article,
 }) => {
-    const { title, url, source, publishedAt, imageUrl } = article;
+    const { id, title, url, source, publishedAt, imageUrl } = article;
+    const navigate = useNavigate();
 
     return (
         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
@@ -17,7 +19,10 @@ export const FeedCard: React.FC<FeedCardProps> = ({
                 </span>
                 <span className="text-slate-400 text-xs font-medium">{publishedAt}</span>
             </div>
-            <h2 className="text-2xl font-display font-bold text-slate-900 leading-tight mb-6">
+            <h2
+                onClick={() => navigate(`/storybrief/${id}`)}
+                className="text-2xl font-display font-bold text-slate-900 leading-tight mb-6 cursor-pointer hover:text-brand-pink transition-colors active:scale-[0.99]"
+            >
                 {title}
             </h2>
             <div className="bg-slate-50 rounded-2xl p-5 mb-6">

@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import CategorySelectionPage from './pages/CategorySelectionPage';
 import TopicsSelectionPage from './pages/TopicsSelectionPage';
 import FeedPage from './pages/FeedPage';
+import StoryBriefPage from './pages/StoryBriefPage';
 
 const App: React.FC = () => {
 
@@ -13,6 +14,7 @@ const App: React.FC = () => {
           <Route path="/" element={<CategorySelectionPage />} />
           <Route path="/topics" element={<TopicsSelectionPage />} />
           <Route path="/feed" element={<FeedPage />} />
+          <Route path="/storybrief/:id" element={<StoryBriefPage />} />
         </Routes>
       </div>
     </HashRouter>
