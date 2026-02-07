@@ -2,7 +2,8 @@
 // Abstracts news provider to make it easy to swap providers later
 
 import { NEWS_CONFIG } from '../../config/newsConfig';
-import type { NewsQueryParams, NewsResponse } from '../../types/news';
+import type { NewsQueryParams, NewsResponse, ArticleSummary } from '../../types/news';
+import { generateArticleSummaryLocal } from './gemini';
 
 import { supabase } from './supabase';
 
@@ -44,29 +45,15 @@ export async function fetchLatestNews(params: NewsQueryParams): Promise<NewsResp
         throw new Error('Failed to fetch news via edge function');
     }
 
-    // Edge function returns a full NewsResponse-like payload
-    if (data) {
-        console.log('--- news api debug ---');
-        console.log('Provider:', data.provider);
-        console.log('Query:', data.query);
-        console.log('Items Count:', data.items?.length || 0);
-
-        // Debug trusted vs non-trusted
-        const trustedArticles = data.items?.filter((a: { isTrusted?: boolean }) => a.isTrusted) || [];
-        const nonTrustedArticles = data.items?.filter((a: { isTrusted?: boolean }) => !a.isTrusted) || [];
-        console.log(`Trusted: ${trustedArticles.length}, Non-trusted: ${nonTrustedArticles.length}`);
-
-        if (trustedArticles.length > 0) {
-            console.log('First trusted sources:', trustedArticles.slice(0, 5).map((a: { source: string }) => a.source));
-        } else {
-            console.log('⚠️ No trusted articles found! Check category_sources table.');
-        }
-
-        console.log('First 5 articles order:', data.items?.slice(0, 5).map((a: { source: string; isTrusted?: boolean }) =>
-            `${a.source} (${a.isTrusted ? '✓ trusted' : 'not trusted'})`
-        ));
-        console.log('----------------------');
-    }
-
     return data as NewsResponse;
+}
+
+export async function fetchArticleSummary(url: string, title?: string): Promise<ArticleSummary | null> {
+    try {
+        const summary = await generateArticleSummaryLocal(url, title);
+        return summary;
+    } catch (error) {
+        console.error('Error fetching article summary (local):', error);
+        return null; // Or throw depending on requirements
+    }
 }

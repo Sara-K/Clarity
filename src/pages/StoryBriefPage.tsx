@@ -1,10 +1,67 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { NewsResponse } from '../types/news';
 import { Icon } from '../components/ui/Icons';
+import { useArticleSummary } from '../hooks/useArticleSummary';
+import { useLatestNews } from '../hooks/useLatestNews';
 
 export const StoryBriefPage: React.FC = () => {
+
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const queryClient = useQueryClient();
+
+    // Strategy 1: Get from navigation state (Top priority - fastest)
+    const stateArticle = location.state?.article;
+
+    // Strategy 2: Content cache lookup (If persistent navigation failed)
+    const cachedArticle = React.useMemo(() => {
+        if (stateArticle) return stateArticle;
+
+        // Search through all cached news queries
+        const queries = queryClient.getQueriesData<NewsResponse>({ queryKey: ['news'] });
+        for (const [_, data] of queries) {
+            const found = data?.items?.find(item => item.id === id);
+            if (found) return found;
+        }
+        return null;
+    }, [id, stateArticle, queryClient]);
+
+    // Strategy 3: Fallback fetch (Only if absolutely necessary)
+    const { data: newsData, isLoading: isSearching } = useLatestNews({
+        limit: 100,
+        sinceHours: 48, // Look back further
+        categoryIds: [],
+        topicIds: [],
+    });
+
+    const article = stateArticle || cachedArticle || newsData?.items.find(item => item.id === id);
+
+    const { data: summary, isLoading: isSummarizing, isError } = useArticleSummary({
+        url: article?.url,
+        title: article?.title,
+    });
+
+    if (!article && !isSearching) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+                <Icon name="sentiment_dissatisfied" className="text-6xl text-slate-300 mb-4" />
+                <h2 className="text-xl font-bold text-slate-700 mb-2">Article not found</h2>
+                <p className="text-slate-500 mb-8 max-w-md">
+                    We couldn't locate the article details. It might be too old or unavailable.
+                </p>
+                <button
+                    onClick={() => navigate('/feed')}
+                    className="px-6 py-3 bg-brand-pink text-white font-bold rounded-xl shadow-lg shadow-brand-pink/30 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                    Back to Feed
+                </button>
+            </div>
+        );
+    }
+
 
     return (
         <div className="flex flex-col min-h-screen bg-white font-display overflow-y-auto hide-scrollbar pb-32">
@@ -44,150 +101,114 @@ export const StoryBriefPage: React.FC = () => {
 
                 {/* Headline */}
                 <h1 className="text-3xl font-black text-slate-900 leading-[1.1] mb-8 serif">
-                    The AI Revolution: How Generative Models are Redefining Creativity
+                    {article.title}
                 </h1>
 
-                {/* What Happened Section */}
-                <div className="bg-slate-50 rounded-[2.5rem] p-8 mb-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-pink/5 rounded-full -translate-y-16 translate-x-16 blur-2xl" />
-
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-brand-pink">
-                            <Icon name="bolt" className="text-xl" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest text-brand-pink">What happened</span>
+                {/* Loading State */}
+                {(isSummarizing || isSearching) && (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="w-16 h-16 border-4 border-brand-pink border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-slate-500 font-medium">Generating AI Summary...</p>
                     </div>
+                )}
 
-                    <p className="text-slate-600 leading-relaxed text-lg font-medium">
-                        A major breakthrough in neural network architecture was announced today, allowing AI to process and generate highly complex creative works with <span className="text-brand-pink font-bold underline decoration-brand-pink/30 decoration-4 underline-offset-4 pointer-events-none px-1">90% more efficiency</span> than previous models.
-                    </p>
-                </div>
-
-                {/* Key Takeaways */}
-                <div className="space-y-8 mb-12">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Key Takeaways</h2>
-
-                    <div className="space-y-10 px-2">
-                        {/* Takeaway 1 */}
-                        <div className="flex gap-6">
-                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-xl shadow-amber-100/50">
-                                <Icon name="speed" className="text-3xl" />
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="font-bold text-slate-800">Blazing Fast Processing</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-amber-500 mt-1">•</span>
-                                        <span>Speeds increased by 10x, enabling real-time generation on standard mobile devices.</span>
-                                    </li>
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-amber-500 mt-1">•</span>
-                                        <span>Latency reduction allows for seamless interactive design sessions without cloud delay.</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Takeaway 2 */}
-                        <div className="flex gap-6">
-                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-xl shadow-indigo-100/50">
-                                <Icon name="verified_user" className="text-3xl" />
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="font-bold text-slate-800">Ethical Guardrails</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-indigo-500 mt-1">•</span>
-                                        <span>New protocols ensure that generated content respects artistic copyright patterns automatically.</span>
-                                    </li>
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-indigo-500 mt-1">•</span>
-                                        <span>Embedded digital watermarking identifies AI involvement at the metadata level.</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Takeaway 3 */}
-                        <div className="flex gap-6">
-                            <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-xl shadow-emerald-100/50">
-                                <Icon name="eco" className="text-3xl" />
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="font-bold text-slate-800">Eco-Friendly Computing</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-emerald-500 mt-1">•</span>
-                                        <span>The new model uses 40% less energy, making "Green AI" a reality for mainstream consumers.</span>
-                                    </li>
-                                    <li className="flex gap-2 text-sm text-slate-500 leading-tight">
-                                        <span className="text-emerald-500 mt-1">•</span>
-                                        <span>Carbon-neutral training cycles validated by third-party environmental auditors.</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
+                {/* Error State */}
+                {isError && (
+                    <div className="bg-red-50 rounded-[2rem] p-8 mb-8 text-center text-red-600">
+                        <Icon name="error" className="text-4xl mb-2" />
+                        <p className="font-bold">Failed to generate summary</p>
+                        <p className="text-sm mt-2">Please try again later.</p>
                     </div>
-                </div>
+                )}
 
-                {/* Evidence & Quotes */}
-                <div className="space-y-6 mb-12">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Evidence & Quotes</h2>
+                {/* Content */}
+                {summary && (
+                    <>
+                        {/* What Happened Section */}
+                        <div className="bg-slate-50 rounded-[2.5rem] p-8 mb-8 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-pink/5 rounded-full -translate-y-16 translate-x-16 blur-2xl" />
 
-                    {/* Quote Card 1 */}
-                    <div className="bg-blue-50/50 rounded-[2rem] p-8 border border-blue-100 relative overflow-hidden">
-                        <div className="absolute top-6 right-8 text-blue-200 opacity-50">
-                            <Icon name="format_quote" className="text-6xl" />
-                        </div>
-                        <span className="inline-block px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg mb-6">
-                            Key Insight
-                        </span>
-                        <p className="text-slate-700 font-medium italic mb-8 serif text-lg leading-relaxed relative z-10">
-                            "This isn't just an incremental step; it's a leapfrog over the entire landscape of generative computing. We've fundamentally solved the latency problem that plagued creators for years."
-                        </p>
-                        <div className="flex items-center justify-between gap-4 pt-6 border-t border-blue-100">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 flex-shrink-0">
-                                    <Icon name="biotech" className="text-xl" />
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-brand-pink">
+                                    <Icon name="bolt" className="text-xl" />
                                 </div>
-                                <div className="leading-tight">
-                                    <p className="text-sm font-bold text-slate-800">DR. ELENA RODRIGUEZ</p>
-                                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Chief Scientist @ TechPulse</p>
-                                </div>
+                                <span className="text-xs font-black uppercase tracking-widest text-brand-pink">What happened</span>
                             </div>
-                            <button className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-blue-600 bg-white px-3 py-2 rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
-                                Source <Icon name="launch" className="text-xs" />
-                            </button>
-                        </div>
-                    </div>
 
-                    {/* Market Data Card */}
-                    <div className="bg-purple-50/50 rounded-[2rem] p-8 border border-purple-100 relative overflow-hidden">
-                        <div className="absolute top-6 right-8 text-purple-200 opacity-50">
-                            <Icon name="bar_chart" className="text-6xl" />
+                            <p className="text-slate-600 leading-relaxed text-lg font-medium">
+                                {summary.tldr}
+                            </p>
                         </div>
-                        <span className="inline-block px-3 py-1 bg-purple-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg mb-6">
-                            Market Data
-                        </span>
-                        <p className="text-slate-700 font-medium italic mb-8 serif text-lg leading-relaxed relative z-10">
-                            "Initial tests show energy consumption levels dropping by nearly half. This addresses the single biggest criticism of large-scale AI deployment and changes the ROI for startups."
-                        </p>
-                        <div className="flex items-center justify-between gap-4 pt-6 border-t border-purple-100">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-purple-600 shadow-sm border border-purple-100 flex-shrink-0">
-                                    <Icon name="monitoring" className="text-xl" />
-                                </div>
-                                <div className="leading-tight">
-                                    <p className="text-sm font-bold text-slate-800">GREENSCALE ANALYTICS</p>
-                                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Q4 Sustainability Report</p>
-                                </div>
+
+                        {/* Key Takeaways */}
+                        <div className="space-y-8 mb-12">
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Key Takeaways</h2>
+
+                            <div className="space-y-10 px-2">
+                                {summary.key_takeaways.map((takeaway, index) => (
+                                    <div key={index} className="flex gap-6">
+                                        <div className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl ${index % 3 === 0 ? 'bg-amber-100 text-amber-600 shadow-amber-100/50' :
+                                            index % 3 === 1 ? 'bg-indigo-100 text-indigo-600 shadow-indigo-100/50' :
+                                                'bg-emerald-100 text-emerald-600 shadow-emerald-100/50'
+                                            }`}>
+                                            <Icon name={
+                                                index % 3 === 0 ? 'speed' :
+                                                    index % 3 === 1 ? 'verified_user' : 'eco'
+                                            } className="text-3xl" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <h3 className="font-bold text-slate-800 leading-tight">{takeaway}</h3>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <button className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-purple-600 bg-white px-3 py-2 rounded-lg border border-purple-100 shadow-sm whitespace-nowrap">
-                                Report <Icon name="launch" className="text-xs" />
-                            </button>
                         </div>
-                    </div>
-                </div>
+
+                        {/* Evidence & Quotes */}
+                        <div className="space-y-6 mb-12">
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Evidence & Quotes</h2>
+
+                            {summary.quotes.map((quoteItem, index) => (
+                                <div key={index} className={`rounded-[2rem] p-8 border relative overflow-hidden ${index % 2 === 0 ? 'bg-blue-50/50 border-blue-100' : 'bg-purple-50/50 border-purple-100'
+                                    }`}>
+                                    <div className={`absolute top-6 right-8 opacity-50 ${index % 2 === 0 ? 'text-blue-200' : 'text-purple-200'
+                                        }`}>
+                                        <Icon name="format_quote" className="text-6xl" />
+                                    </div>
+                                    <span className={`inline-block px-3 py-1 text-white text-[9px] font-black uppercase tracking-widest rounded-lg mb-6 ${index % 2 === 0 ? 'bg-blue-600' : 'bg-purple-600'
+                                        }`}>
+                                        {quoteItem.context || 'Key Insight'}
+                                    </span>
+                                    <p className="text-slate-700 font-medium italic mb-8 serif text-lg leading-relaxed relative z-10">
+                                        "{quoteItem.quote}"
+                                    </p>
+                                    <div className={`flex items-center justify-between gap-4 pt-6 border-t ${index % 2 === 0 ? 'border-blue-100' : 'border-purple-100'
+                                        }`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border flex-shrink-0 ${index % 2 === 0 ? 'text-blue-600 border-blue-100' : 'text-purple-600 border-purple-100'
+                                                }`}>
+                                                <Icon name="biotech" className="text-xl" />
+                                            </div>
+                                            <div className="leading-tight">
+                                                <p className="text-sm font-bold text-slate-800">Source</p>
+                                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider truncate max-w-[100px]">{new URL(quoteItem.url).hostname}</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={quoteItem.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest bg-white px-3 py-2 rounded-lg border shadow-sm whitespace-nowrap hover:opacity-80 transition-opacity ${index % 2 === 0 ? 'text-blue-600 border-blue-100' : 'text-purple-600 border-purple-100'
+                                                }`}
+                                        >
+                                            Open Source <Icon name="launch" className="text-xs" />
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Sticky Footer */}

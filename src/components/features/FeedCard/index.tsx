@@ -20,7 +20,7 @@ export const FeedCard: React.FC<FeedCardProps> = ({
                 <span className="text-slate-400 text-xs font-medium">{publishedAt}</span>
             </div>
             <h2
-                onClick={() => navigate(`/storybrief/${id}`)}
+                onClick={() => navigate(`/storybrief/${id}`, { state: { article } })}
                 className="text-2xl font-display font-bold text-slate-900 leading-tight mb-6 cursor-pointer hover:text-brand-pink transition-colors active:scale-[0.99]"
             >
                 {title}
