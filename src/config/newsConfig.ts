@@ -1,10 +1,8 @@
-// News Provider Configuration
-
 export const NEWS_CONFIG = {
     // Default query parameters
     DEFAULT_LIMIT: 20,
     MAX_LIMIT: 50,
-    DEFAULT_SINCE_HOURS: 24,
+    DEFAULT_SINCE_HOURS: 120, // 5 days for better topic coverage
 
     // Caching settings (in milliseconds)
     CACHE: {
