@@ -4,30 +4,13 @@
 import { NEWS_CONFIG } from '../../config/newsConfig';
 import type { NewsQueryParams, NewsResponse } from '../../types/news';
 
-import { supabase, fetchCategoriesByIds, fetchTopicsByIds } from './supabase';
-
-/**
- * Resolve category and topic IDs to their respective slugs.
- */
-async function resolveSlugs(categoryIds: string[], topicIds: string[]) {
-    const [categories, topics] = await Promise.all([
-        categoryIds.length > 0 ? fetchCategoriesByIds(categoryIds) : Promise.resolve([]),
-        topicIds.length > 0 ? fetchTopicsByIds(topicIds) : Promise.resolve([])
-    ]);
-
-    const categorySlugs = categories.map(c => c.slug);
-    const topicSlugs = topics.map(t => t.slug);
-
-    return { categorySlugs, topicSlugs };
-}
+import { supabase } from './supabase';
 
 /**
  * Fetch latest news articles based on selected categories and topics.
  * Calls a Supabase Edge Function that handles GDELT integration and caching.
  */
-export async function fetchLatestNews(
-    params: NewsQueryParams
-): Promise<NewsResponse> {
+export async function fetchLatestNews(params: NewsQueryParams): Promise<NewsResponse> {
     const {
         categoryIds,
         topicIds,
@@ -38,22 +21,22 @@ export async function fetchLatestNews(
     if (!categoryIds.length && !topicIds.length) {
         return {
             provider: 'gdelt-proxied',
-            query: { keywords: [], timeRange: '' },
+            query: { keywords: [], timeRange: `${sinceHours}h` },
             items: [],
             fetchedAt: new Date().toISOString(),
         };
     }
 
-    const { categorySlugs, topicSlugs } = await resolveSlugs(categoryIds, topicIds);
-
-    const { data: articles, error } = await supabase.functions.invoke('fetch-news', {
+    const { data, error } = await supabase.functions.invoke('fetch-news', {
         body: {
-            categorySlugs,
-            topicSlugs,
+            categoryIds,
             topicIds,
             limit,
-            sinceHours
-        }
+            sinceHours,
+            // Optional toggles if UI is added later:
+            // trustedOnly: false,
+            // language: 'eng',
+        },
     });
 
     if (error) {
@@ -61,13 +44,29 @@ export async function fetchLatestNews(
         throw new Error('Failed to fetch news via edge function');
     }
 
-    return {
-        provider: 'gdelt-proxied',
-        query: {
-            keywords: [...new Set([...categorySlugs, ...topicSlugs])],
-            timeRange: `${sinceHours}h`,
-        },
-        items: articles || [],
-        fetchedAt: new Date().toISOString(),
-    };
+    // Edge function returns a full NewsResponse-like payload
+    if (data) {
+        console.log('--- news api debug ---');
+        console.log('Provider:', data.provider);
+        console.log('Query:', data.query);
+        console.log('Items Count:', data.items?.length || 0);
+
+        // Debug trusted vs non-trusted
+        const trustedArticles = data.items?.filter((a: { isTrusted?: boolean }) => a.isTrusted) || [];
+        const nonTrustedArticles = data.items?.filter((a: { isTrusted?: boolean }) => !a.isTrusted) || [];
+        console.log(`Trusted: ${trustedArticles.length}, Non-trusted: ${nonTrustedArticles.length}`);
+
+        if (trustedArticles.length > 0) {
+            console.log('First trusted sources:', trustedArticles.slice(0, 5).map((a: { source: string }) => a.source));
+        } else {
+            console.log('⚠️ No trusted articles found! Check category_sources table.');
+        }
+
+        console.log('First 5 articles order:', data.items?.slice(0, 5).map((a: { source: string; isTrusted?: boolean }) =>
+            `${a.source} (${a.isTrusted ? '✓ trusted' : 'not trusted'})`
+        ));
+        console.log('----------------------');
+    }
+
+    return data as NewsResponse;
 }

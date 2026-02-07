@@ -1,4 +1,4 @@
-export interface ArticleLink {
+export type NewsArticle = {
     id: string;
     title: string;
     url: string;
@@ -6,21 +6,19 @@ export interface ArticleLink {
     publishedAt?: string;
     imageUrl?: string;
     topicIds: string[];
-}
+    isTrusted?: boolean;
+};
 
-export interface NewsQueryParams {
+export type NewsResponse = {
+    provider: string;
+    query: Record<string, unknown>;
+    items: NewsArticle[];
+    fetchedAt: string;
+};
+
+export type NewsQueryParams = {
     categoryIds: string[];
     topicIds: string[];
     limit?: number;
     sinceHours?: number;
-}
-
-export interface NewsResponse {
-    provider: string;
-    query: {
-        keywords: string[];
-        timeRange: string;
-    };
-    items: ArticleLink[];
-    fetchedAt: string;
-}
+};

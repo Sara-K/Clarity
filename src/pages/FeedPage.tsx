@@ -4,14 +4,15 @@ import { BottomNavigation } from '../components/layout/BottomNavigation';
 import { Icon } from '../components/ui/Icons';
 import { useOnboardingStore } from '../store/useOnboardingStore';
 import { useLatestNews } from '../hooks/useLatestNews';
+import { NEWS_CONFIG } from '../config/newsConfig';
 
 const FeedPage: React.FC = () => {
     const { selectedCategoryIds, selectedTopicIds } = useOnboardingStore();
-    const { data, isLoading, isError, refetch } = useLatestNews({
+    const { data, isLoading, isError, isFetching, refetch } = useLatestNews({
         categoryIds: selectedCategoryIds,
         topicIds: selectedTopicIds,
-        limit: 20,
-        sinceHours: 24,
+        limit: NEWS_CONFIG.DEFAULT_LIMIT,
+        sinceHours: NEWS_CONFIG.DEFAULT_SINCE_HOURS,
     });
 
     const feedItems = data?.items || [];
@@ -42,11 +43,11 @@ const FeedPage: React.FC = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-700 mb-2">No articles found</h3>
             <p className="text-slate-500 text-sm max-w-xs mb-6">
-                {selectedTopicIds.length === 0
-                    ? 'Select some topics to see your personalized feed.'
+                {(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0)
+                    ? 'Select some categories or topics to see your personalized feed.'
                     : 'No recent articles match your interests. Try expanding your time range or adding more topics.'}
             </p>
-            {selectedTopicIds.length === 0 && (
+            {(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0) && (
                 <button
                     onClick={() => window.location.hash = '/'}
                     className="px-6 py-3 bg-brand-pink text-white rounded-xl font-semibold hover:bg-brand-pink/90 transition-colors"
@@ -89,9 +90,22 @@ const FeedPage: React.FC = () => {
                         <span className="text-xl leading-none block pb-1">✨</span> Your AI-curated digest
                     </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-pink to-brand-blue p-[2px]">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                        <Icon name="ar_on_you" className="text-brand-pink text-[1.5rem]" />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => refetch()}
+                        disabled={isFetching}
+                        className={`w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-all ${isFetching ? 'opacity-50' : 'active:scale-95'}`}
+                        title="Refresh news"
+                    >
+                        <Icon
+                            name="refresh"
+                            className={`text-xl ${isFetching ? 'animate-spin' : ''}`}
+                        />
+                    </button>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-pink to-brand-blue p-[2px]">
+                        <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                            <Icon name="ar_on_you" className="text-brand-pink text-[1.5rem]" />
+                        </div>
                     </div>
                 </div>
             </div>
