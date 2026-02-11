@@ -6,8 +6,8 @@ import { CategoryCard } from '../components/features/CategoryCard';
 import { useCategoriesQuery } from '../hooks/useCategories';
 import { getCategoryImage } from '../config/categoryAssets';
 import type { DbCategory } from '../types/database';
-
 import { useOnboardingStore } from '../store/useOnboardingStore';
+import { StatusDisplay } from '../components/ui/StatusDisplay';
 
 const CategorySelectionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,8 +15,6 @@ const CategorySelectionPage: React.FC = () => {
   const { selectedCategoryIds: selectedCategories, toggleCategory } = useOnboardingStore();
 
   const { data: categories, isLoading, isError, refetch } = useCategoriesQuery();
-
-
 
   // Transform DB category to UI format
   const transformCategory = (cat: DbCategory) => ({
@@ -28,7 +26,6 @@ const CategorySelectionPage: React.FC = () => {
   const filteredCategories = (categories || [])
     .map(transformCategory)
     .filter(c => c.label.toLowerCase().includes(searchQuery.toLowerCase()));
-
 
   if (isLoading) {
     return (
@@ -52,13 +49,16 @@ const CategorySelectionPage: React.FC = () => {
   if (isError) {
     return (
       <div className="flex flex-col h-screen bg-white font-display items-center justify-center p-8">
-        <Icon name="error" className="text-red-400 text-6xl mb-4" />
-        <h2 className="text-xl font-bold text-slate-700 mb-2">Failed to load categories</h2>
-        <p className="text-slate-500 mb-6">Please check your connection and try again.</p>
-        <Button onClick={() => refetch()} className="px-6 py-3 bg-brand-pink text-white rounded-xl">
-          <Icon name="refresh" className="mr-2" />
-          Retry
-        </Button>
+        <StatusDisplay
+          variant="error"
+          title="Failed to load categories"
+          message="Please check your connection and try again."
+          action={{
+            label: "Retry",
+            onClick: () => refetch(),
+            icon: "refresh"
+          }}
+        />
       </div>
     );
   }

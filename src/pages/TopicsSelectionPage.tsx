@@ -6,6 +6,7 @@ import { useTopicsByCategoriesQuery } from '../hooks/useTopics';
 import { useCategoriesQuery } from '../hooks/useCategories';
 import { useOnboardingStore } from '../store/useOnboardingStore';
 import type { DbTopic, DbCategory } from '../types/database';
+import { StatusDisplay } from '../components/ui/StatusDisplay';
 
 const TopicsSelectionPage: React.FC = () => {
     const navigate = useNavigate();
@@ -51,13 +52,16 @@ const TopicsSelectionPage: React.FC = () => {
     if (topicsError) {
         return (
             <div className="flex flex-col h-screen bg-white font-display items-center justify-center p-8">
-                <Icon name="error" className="text-red-400 text-6xl mb-4" />
-                <h2 className="text-xl font-bold text-slate-700 mb-2">Failed to load topics</h2>
-                <p className="text-slate-500 mb-6">Please check your connection and try again.</p>
-                <Button onClick={() => refetch()} className="px-6 py-3 bg-brand-pink text-white rounded-xl">
-                    <Icon name="refresh" className="mr-2" />
-                    Retry
-                </Button>
+                <StatusDisplay
+                    variant="error"
+                    title="Failed to load topics"
+                    message="Please check your connection and try again."
+                    action={{
+                        label: "Retry",
+                        onClick: () => refetch(),
+                        icon: "refresh"
+                    }}
+                />
             </div>
         );
     }

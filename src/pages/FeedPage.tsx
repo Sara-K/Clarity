@@ -5,6 +5,7 @@ import { Icon } from '../components/ui/Icons';
 import { useOnboardingStore } from '../store/useOnboardingStore';
 import { useLatestNews } from '../hooks/useLatestNews';
 import { NEWS_CONFIG } from '../config/newsConfig';
+import { StatusDisplay } from '../components/ui/StatusDisplay';
 
 const FeedPage: React.FC = () => {
     const { selectedCategoryIds, selectedTopicIds } = useOnboardingStore();
@@ -32,49 +33,6 @@ const FeedPage: React.FC = () => {
                     <div className="h-20 bg-slate-50 rounded-xl animate-pulse" />
                 </div>
             ))}
-        </div>
-    );
-
-    // Empty State
-    const EmptyState = () => (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                <Icon name="article" className="text-slate-400 text-4xl" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-700 mb-2">No articles found</h3>
-            <p className="text-slate-500 text-sm max-w-xs mb-6">
-                {(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0)
-                    ? 'Select some categories or topics to see your personalized feed.'
-                    : 'No recent articles match your interests. Try expanding your time range or adding more topics.'}
-            </p>
-            {(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0) && (
-                <button
-                    onClick={() => window.location.hash = '/'}
-                    className="px-6 py-3 bg-brand-pink text-white rounded-xl font-semibold hover:bg-brand-pink/90 transition-colors"
-                >
-                    Select Topics
-                </button>
-            )}
-        </div>
-    );
-
-    // Error State
-    const ErrorState = () => (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                <Icon name="error" className="text-red-400 text-4xl" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-700 mb-2">Failed to load articles</h3>
-            <p className="text-slate-500 text-sm max-w-xs mb-6">
-                Please check your connection and try again.
-            </p>
-            <button
-                onClick={() => refetch()}
-                className="flex items-center gap-2 px-6 py-3 bg-brand-pink text-white rounded-xl font-semibold hover:bg-brand-pink/90 transition-colors"
-            >
-                <Icon name="refresh" />
-                Retry
-            </button>
         </div>
     );
 
@@ -113,8 +71,32 @@ const FeedPage: React.FC = () => {
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-4 py-4 hide-scrollbar">
                 {isLoading && <LoadingSkeleton />}
-                {isError && <ErrorState />}
-                {!isLoading && !isError && feedItems.length === 0 && <EmptyState />}
+                {isError && (
+                    <StatusDisplay
+                        variant="error"
+                        title="Failed to load articles"
+                        message="Please check your connection and try again."
+                        action={{
+                            label: "Retry",
+                            onClick: () => refetch(),
+                            icon: "refresh"
+                        }}
+                    />
+                )}
+                {!isLoading && !isError && feedItems.length === 0 && (
+                    <StatusDisplay
+                        variant="empty"
+                        title="No articles found"
+                        message={(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0)
+                            ? 'Select some categories or topics to see your personalized feed.'
+                            : 'No recent articles match your interests. Try expanding your time range or adding more topics.'}
+                        action={(selectedTopicIds.length === 0 && selectedCategoryIds.length === 0) ? {
+                            label: "Select Topics",
+                            onClick: () => window.location.hash = '/',
+                            icon: "interests"
+                        } : undefined}
+                    />
+                )}
                 {!isLoading && !isError && feedItems.length > 0 && (
                     <div className="space-y-4">
                         {feedItems.map((article) => (
