@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Temporal } from '@js-temporal/polyfill';
 import { Icon } from '../../ui/Icons';
 import { FeedCardProps } from './FeedCard.types';
 
@@ -8,17 +9,56 @@ export const FeedCard: React.FC<FeedCardProps> = ({
     tagColor = 'bg-brand-pink/20 text-brand-pink',
     article,
 }) => {
-    const { id, title, url, source, publishedAt, imageUrl } = article;
+    const { id, title, source, publishedAt, imageUrl } = article;
     const navigate = useNavigate();
 
+    const formattedDate = React.useMemo(() => {
+        if (!publishedAt) return '';
+        try {
+            const instant = Temporal.Instant.from(publishedAt);
+            const now = Temporal.Now.instant();
+
+            const zdtPublished = instant.toZonedDateTimeISO(Temporal.Now.timeZoneId());
+            const zdtNow = now.toZonedDateTimeISO(Temporal.Now.timeZoneId());
+
+            const duration = zdtNow.since(zdtPublished, { largestUnit: 'day' });
+
+            if (duration.days > 7) {
+                return zdtPublished.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+            }
+            if (duration.days > 0) return `${duration.days}d ago`;
+            if (duration.hours > 0) return `${duration.hours}h ago`;
+            if (duration.minutes > 0) return `${duration.minutes}m ago`;
+            return 'Just now';
+        } catch (e) {
+            console.error('Temporal error:', e);
+            return '';
+        }
+    }, [publishedAt]);
+
     return (
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6 group transition-all hover:shadow-md">
             <div className="flex justify-between items-start mb-4">
                 <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${tagColor}`}>
                     {tag}
                 </span>
-                <span className="text-slate-400 text-xs font-medium">{publishedAt}</span>
+                <span className="text-slate-400 text-xs font-medium">{formattedDate}</span>
             </div>
+
+            {imageUrl && (
+                <div
+                    onClick={() => navigate(`/storybrief/${id}`, { state: { article } })}
+                    className="w-full h-48 mb-6 overflow-hidden rounded-2xl cursor-pointer"
+                >
+                    <img
+                        src={imageUrl}
+                        alt={title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                </div>
+            )}
+
             <h2
                 onClick={() => navigate(`/storybrief/${id}`, { state: { article } })}
                 className="text-2xl font-display font-bold text-slate-900 leading-tight mb-6 cursor-pointer hover:text-brand-pink transition-colors active:scale-[0.99]"
