@@ -8,7 +8,7 @@ A mobile-first intelligence platform that clusters noisy feeds into structured, 
 
 1. Install dependencies:
    `npm install`
-2. Set the following in [.env.local](.env.local)
+2. Set the following in [.env](.env)
 - `GEMINI_API_KEY=YOUR_GEMINI_API_KEY`
 - `VITE_SUPABASE_URL=YOUR_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY`
