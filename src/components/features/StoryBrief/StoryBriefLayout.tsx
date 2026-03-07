@@ -8,7 +8,6 @@ import { StoryHeader } from './StoryHeader';
 import { StorySummary } from './StorySummary';
 import { StoryKeyTakeaways } from './StoryKeyTakeaways';
 import { StoryQuotes } from './StoryQuotes';
-import { StoryActions } from './StoryActions';
 
 interface StoryBriefLayoutProps {
     article: NewsArticle | undefined;
@@ -91,8 +90,6 @@ export const StoryBriefLayout: React.FC<StoryBriefLayoutProps> = ({
                     </>
                 )}
             </div>
-            <StoryActions />
-            <div className="h-10" />
         </div>
     );
 };
