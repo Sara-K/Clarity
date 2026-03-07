@@ -2,157 +2,122 @@ import { supabase } from './supabase';
 import { ArticleSummary } from '../../types/news';
 
 // Configuration
-// NOTE: These must be set in .env.local for the client to use them.
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
-
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-// Helper to sanitize/normalize URL
-function normalizeUrl(urlStr: string): string {
-    try {
-        const u = new URL(urlStr);
-        // Remove common tracking params
-        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid'].forEach(p => u.searchParams.delete(p));
-        // Remove hash
-        u.hash = '';
-        return u.toString();
-    } catch (e) {
-        return urlStr;
-    }
-}
-
-// Simple hash function for ID generation (SHA-256)
-async function generateId(url: string): Promise<string> {
-    const msgUint8 = new TextEncoder().encode(url);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex.slice(0, 16); // Shorten for convenience
-}
-
+/**
+ * Main entry point to generate a summary for an article URL.
+ * Uses local Gemini API with Supabase caching.
+ */
 export async function generateArticleSummaryLocal(url: string, title?: string): Promise<ArticleSummary> {
     const normalizedUrl = normalizeUrl(url);
     const id = await generateId(normalizedUrl);
 
-    console.log(`[Local Summary] Request for: ${url} (ID: ${id})`);
-
-    // 1. CHECK CACHE
-    const { data: cached, error: cacheError } = await supabase
+    // 1. Check Cache
+    const { data: cached } = await supabase
         .from('article_summaries')
         .select('*')
         .eq('id', id)
         .single();
 
-    if (cached && !cacheError) {
-        console.log(`[Local Summary] Cache hit for ${id}`);
-        return cached as ArticleSummary;
-    }
+    if (cached) return cached as ArticleSummary;
 
-    if (cacheError && cacheError.code !== 'PGRST116') {
-        console.warn(`[Local Summary] Cache lookup warning:`, cacheError);
-    }
+    // 2. Generate via Gemini
+    if (!GEMINI_API_KEY) throw new Error("Missing VITE_GEMINI_API_KEY");
 
-    console.log(`[Local Summary] Cache miss for ${id}. Generating via Gemini...`);
-
-    if (!GEMINI_API_KEY) {
-        throw new Error("Missing VITE_GEMINI_API_KEY in environment variables");
-    }
-
-    // 2. CALL GEMINI
     const prompt = `
-    You are an expert news analyst. 
-    Analyze the following article URL: ${normalizedUrl}
-    Using the URL, you must retrieve or infer the content. If you cannot access the real-time content, verify if it's a known article or infer from the URL structure and title "${title || ''}". 
-    
-    Task: Create a concise summary in strict JSON format.
-    
-    Constraint Checklist & Confidence Score:
-    1. Output strictly valid JSON.
-    2. tldr: Max 2 sentences. High density information.
-    3. key_takeaways: 3-6 items. Each max 12 words.
-    4. quotes: 2-4 items. Short (max 25 words). MUST be verbatim if possible, otherwise marked as [Excerpt]. Includes context.
-    5. No markdown fencing (no \`\`\`json).
-    
-    Response JSON Schema:
-    {
-      "tldr": "string",
-      "key_takeaways": ["string", "string"],
-      "quotes": [
-        { "quote": "string", "context": "string (optional speaker or situation)", "url": "${normalizedUrl}" }
-      ]
-    }
+        Analyze this article: ${normalizedUrl} ${title ? `(Title: ${title})` : ''}
+        Provide a concise summary with:
+        - tldr: Max 2 sentences.
+        - key_takeaways: 3-5 bullet points.
+        - quotes: 2-3 short verbatim quotes with context.
     `;
 
-    const geminiBody = {
-        contents: [{
-            parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-            temperature: 0.3,
-            max_output_tokens: 1000,
-            response_mime_type: "application/json"
-        }
-    };
+    const summaryData = await callGemini(prompt);
 
-    const geminiRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(geminiBody)
-    });
-
-    if (!geminiRes.ok) {
-        const errorText = await geminiRes.text();
-        console.error("[Local Summary] Gemini API Error:", errorText);
-        throw new Error(`AI Provider Error: ${geminiRes.status} - ${errorText.slice(0, 100)}`);
-    }
-
-    const geminiData = await geminiRes.json();
-    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-        throw new Error("No content generated by Gemini");
-    }
-
-    // Parse JSON safely
-    let summaryData: any;
-    try {
-        const cleanJson = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        summaryData = JSON.parse(cleanJson);
-        // Enforce URL in quotes
-        if (summaryData.quotes) {
-            summaryData.quotes = summaryData.quotes.map((q: any) => ({ ...q, url: normalizedUrl }));
-        }
-    } catch (e) {
-        console.error("[Local Summary] JSON Parse Error:", generatedText);
-        throw new Error("Failed to parse AI response");
-    }
-
-    // 3. STORE IN DATABASE
+    // 3. Store and Return
     const dbRecord: ArticleSummary = {
         id,
         url: normalizedUrl,
-        title: title || summaryData.tldr.slice(0, 50),
-        tldr: summaryData.tldr,
-        key_takeaways: summaryData.key_takeaways,
-        quotes: summaryData.quotes,
-        // created_at/updated_at handled by DB defaults usually, but type might expect them?
-        // ArticleSummary type in 'types/news.ts' usually has them optional or handled.
-        // Let's check type if needed, but for now we construct what we can.
+        title: title || summaryData.tldr.slice(0, 80),
+        ...summaryData,
     };
 
-    const { error: insertError } = await supabase
-        .from('article_summaries')
-        .upsert(dbRecord)
-        .select()
-        .single();
+    await supabase.from('article_summaries').upsert(dbRecord);
+    
+    return dbRecord;
+}
 
-    if (insertError) {
-        console.error("[Local Summary] Database Insert Error (Cache Failed):", insertError);
-        // We still return the generated data even if caching fails
-    } else {
-        console.log(`[Local Summary] Saved to cache: ${id}`);
+/**
+ * Makes the actual API call to Gemini with structured output configuration.
+ */
+async function callGemini(prompt: string) {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.4,
+                response_mime_type: "application/json",
+                response_schema: {
+                    type: "OBJECT",
+                    required: ["tldr", "key_takeaways", "quotes"],
+                    properties: {
+                        tldr: { type: "STRING" },
+                        key_takeaways: { type: "ARRAY", items: { type: "STRING" } },
+                        quotes: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                required: ["quote", "url"],
+                                properties: {
+                                    quote: { type: "STRING" },
+                                    context: { type: "STRING" },
+                                    url: { type: "STRING" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Gemini API Error: ${response.status} ${await response.text()}`);
     }
 
-    return dbRecord;
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!content) throw new Error("No content generated");
+
+    return JSON.parse(content);
+}
+
+/**
+ * URL normalization to improve cache hit rates.
+ */
+function normalizeUrl(urlStr: string): string {
+    try {
+        const u = new URL(urlStr);
+        ['utm_source', 'utm_medium', 'utm_campaign', 'fbclid', 'gclid'].forEach(p => u.searchParams.delete(p));
+        u.hash = '';
+        return u.toString();
+    } catch {
+        return urlStr;
+    }
+}
+
+/**
+ * Deterministic ID generation for caching.
+ */
+async function generateId(url: string): Promise<string> {
+    const msg = new TextEncoder().encode(url);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msg);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .slice(0, 16);
 }
