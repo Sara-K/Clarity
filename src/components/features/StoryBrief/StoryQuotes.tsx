@@ -14,6 +14,14 @@ interface StoryQuotesProps {
 }
 
 export const StoryQuotes: React.FC<StoryQuotesProps> = ({ quotes, className = '' }) => {
+    const getHostnameSafe = (url: string): string => {
+        try {
+            return new URL(url).hostname;
+        } catch {
+            return 'source';
+        }
+    };
+
     return (
         <div className={`space-y-6 mb-12 ${className}`}>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Evidence & Quotes</h2>
@@ -41,7 +49,7 @@ export const StoryQuotes: React.FC<StoryQuotesProps> = ({ quotes, className = ''
                             </div>
                             <div className="leading-tight">
                                 <p className="text-sm font-bold text-slate-800">Source</p>
-                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider truncate max-w-[100px]">{new URL(quoteItem.url).hostname}</p>
+                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider truncate max-w-[100px]">{getHostnameSafe(quoteItem.url)}</p>
                             </div>
                         </div>
                         <a
