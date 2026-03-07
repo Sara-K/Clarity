@@ -56,7 +56,7 @@ export const StoryBriefLayout: React.FC<StoryBriefLayoutProps> = ({
 
     return (
         <div className="flex flex-col min-h-screen bg-white font-display overflow-y-auto hide-scrollbar pb-32">
-            <StoryHeader />
+            <StoryHeader article={article} />
             <div className="px-6 py-4">
                 <div className="flex items-center gap-2 mb-4">
                     <Tag color="pink">News Brief</Tag>

@@ -4,6 +4,7 @@ import CategorySelectionPage from './pages/CategorySelectionPage';
 import TopicsSelectionPage from './pages/TopicsSelectionPage';
 import FeedPage from './pages/FeedPage';
 import StoryBriefPage from './pages/StoryBriefPage';
+import VaultPage from './pages/VaultPage';
 
 const App: React.FC = () => {
 
@@ -15,6 +16,7 @@ const App: React.FC = () => {
           <Route path="/topics" element={<TopicsSelectionPage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/storybrief/:id" element={<StoryBriefPage />} />
+          <Route path="/vault" element={<VaultPage />} />
         </Routes>
       </div>
     </HashRouter>

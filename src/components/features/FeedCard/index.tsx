@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Temporal } from '@js-temporal/polyfill';
 import { Icon } from '../../ui/Icons';
 import { FeedCardProps } from './FeedCard.types';
+import { useVaultStore } from '../../../store/useVaultStore';
 
 export const FeedCard: React.FC<FeedCardProps> = ({
     tag,
@@ -11,6 +12,8 @@ export const FeedCard: React.FC<FeedCardProps> = ({
 }) => {
     const { id, title, source, publishedAt, imageUrl } = article;
     const navigate = useNavigate();
+    const toggleSaved = useVaultStore((state) => state.toggleSaved);
+    const isSaved = useVaultStore((state) => state.isSaved(article.id));
 
     const formattedDate = React.useMemo(() => {
         if (!publishedAt) return '';
@@ -84,8 +87,12 @@ export const FeedCard: React.FC<FeedCardProps> = ({
                     </button>
                 </div>
                 <div className="flex gap-4">
-                    <button className="text-slate-400 hover:text-brand-blue transition-colors">
-                        <Icon name="bookmark" className="text-2xl" />
+                    <button
+                        onClick={() => toggleSaved(article)}
+                        className={`${isSaved ? 'text-brand-blue' : 'text-slate-400'} hover:text-brand-blue transition-colors`}
+                        title={isSaved ? 'Remove from Vault' : 'Save to Vault'}
+                    >
+                        <Icon name={isSaved ? 'bookmark_added' : 'bookmark'} className="text-2xl" />
                     </button>
                     <button className="text-slate-400 hover:text-slate-600 transition-colors">
                         <Icon name="ios_share" className="text-2xl" />
